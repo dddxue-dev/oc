@@ -1,0 +1,473 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   配色种子（每套主题只定义 5 个种子色）
+   新增配色 = 加两条规则（浅色 / 深色）
+   ============================================================ */
+
+/* 蓝白 · 雾蓝 */
+[data-theme='blue'] {
+  --seed-accent: #5b7fa6;
+  --seed-bg: #f6f7f9;
+  --seed-surface: #ffffff;
+  --seed-ink: #1f2430;
+  --seed-line: #e4e7ec;
+}
+[data-theme='blue'].dark {
+  --seed-accent: #7fa3c9;
+  --seed-bg: #13161b;
+  --seed-surface: #1a1e25;
+  --seed-ink: #e6e9ee;
+  --seed-line: #282d36;
+}
+
+/* 黑红 · 暗绛 */
+[data-theme='crimson'] {
+  --seed-accent: #a6474a;
+  --seed-bg: #faf8f7;
+  --seed-surface: #ffffff;
+  --seed-ink: #241f1e;
+  --seed-line: #e8e1de;
+}
+[data-theme='crimson'].dark {
+  --seed-accent: #c06a6d;
+  --seed-bg: #121010;
+  --seed-surface: #1a1716;
+  --seed-ink: #eae5e3;
+  --seed-line: #2b2523;
+}
+
+/* 墨绿 · 苔青 */
+[data-theme='moss'] {
+  --seed-accent: #4f7a63;
+  --seed-bg: #f6f8f6;
+  --seed-surface: #ffffff;
+  --seed-ink: #1e2621;
+  --seed-line: #e2e8e3;
+}
+[data-theme='moss'].dark {
+  --seed-accent: #7ba893;
+  --seed-bg: #111613;
+  --seed-surface: #18201b;
+  --seed-ink: #e4eae6;
+  --seed-line: #262e29;
+}
+
+/* 藤紫 · 紫灰 */
+[data-theme='violet'] {
+  --seed-accent: #6f6aa3;
+  --seed-bg: #f7f7fa;
+  --seed-surface: #ffffff;
+  --seed-ink: #232230;
+  --seed-line: #e6e5ee;
+}
+[data-theme='violet'].dark {
+  --seed-accent: #9a95c7;
+  --seed-bg: #14131a;
+  --seed-surface: #1c1b24;
+  --seed-ink: #e7e6ef;
+  --seed-line: #2b2a36;
+}
+
+/* 琥珀 · 暖褐 */
+[data-theme='amber'] {
+  --seed-accent: #9a7448;
+  --seed-bg: #faf8f4;
+  --seed-surface: #ffffff;
+  --seed-ink: #2a231a;
+  --seed-line: #ebe4d8;
+}
+[data-theme='amber'].dark {
+  --seed-accent: #c49a68;
+  --seed-bg: #16130f;
+  --seed-surface: #1f1b16;
+  --seed-ink: #ece5da;
+  --seed-line: #302a22;
+}
+
+/* 青瓷 · 薄荷灰 */
+[data-theme='celadon'] {
+  --seed-accent: #4a7d84;
+  --seed-bg: #f5f8f8;
+  --seed-surface: #ffffff;
+  --seed-ink: #1d2527;
+  --seed-line: #dfe8e9;
+}
+[data-theme='celadon'].dark {
+  --seed-accent: #79aeb5;
+  --seed-bg: #101617;
+  --seed-surface: #182021;
+  --seed-ink: #e3eaeb;
+  --seed-line: #253031;
+}
+
+/* 藕荷 · 玫瑰灰 */
+[data-theme='plum'] {
+  --seed-accent: #8a5a72;
+  --seed-bg: #faf7f9;
+  --seed-surface: #ffffff;
+  --seed-ink: #271f23;
+  --seed-line: #ece1e7;
+}
+[data-theme='plum'].dark {
+  --seed-accent: #b8849c;
+  --seed-bg: #151013;
+  --seed-surface: #1d171b;
+  --seed-ink: #ece3e8;
+  --seed-line: #2e2529;
+}
+
+/* 石墨 · 中性灰 */
+[data-theme='graphite'] {
+  --seed-accent: #5f6368;
+  --seed-bg: #f6f6f7;
+  --seed-surface: #ffffff;
+  --seed-ink: #1f2023;
+  --seed-line: #e3e4e6;
+}
+[data-theme='graphite'].dark {
+  --seed-accent: #a6a9ad;
+  --seed-bg: #141516;
+  --seed-surface: #1c1d1f;
+  --seed-ink: #e8e9ea;
+  --seed-line: #2a2c2e;
+}
+
+/* ============================================================
+   派生令牌：所有主题共用同一套推导公式
+   ============================================================ */
+[data-theme] {
+  --c-bg: var(--seed-bg);
+  --c-surface: var(--seed-surface);
+  --c-fg: var(--seed-ink);
+
+  --c-sunken: color-mix(in srgb, var(--seed-bg) 90%, var(--seed-ink) 10%);
+  --c-line: var(--seed-line);
+  --c-line-strong: color-mix(in srgb, var(--seed-line) 60%, var(--seed-ink) 40%);
+  --c-muted: color-mix(in srgb, var(--seed-ink) 58%, var(--seed-bg) 42%);
+  --c-subtle: color-mix(in srgb, var(--seed-ink) 38%, var(--seed-bg) 62%);
+
+  --c-accent: var(--seed-accent);
+  --c-accent-hover: color-mix(in srgb, var(--seed-accent) 82%, #000 18%);
+  --c-accent-soft: color-mix(in srgb, var(--seed-accent) 12%, var(--seed-surface) 88%);
+  --c-accent-fg: #ffffff;
+
+  --c-danger: #a6474a;
+  --c-danger-soft: color-mix(in srgb, #a6474a 11%, var(--seed-surface) 89%);
+  --c-ok: #4f7a63;
+  --c-ok-soft: color-mix(in srgb, #4f7a63 11%, var(--seed-surface) 89%);
+}
+
+.dark {
+  --c-sunken: color-mix(in srgb, var(--seed-bg) 78%, #000 22%);
+  --c-line-strong: color-mix(in srgb, var(--seed-line) 62%, #fff 38%);
+  --c-muted: color-mix(in srgb, var(--seed-ink) 62%, var(--seed-bg) 38%);
+  --c-subtle: color-mix(in srgb, var(--seed-ink) 40%, var(--seed-bg) 60%);
+  --c-accent-hover: color-mix(in srgb, var(--seed-accent) 82%, #fff 18%);
+  --c-accent-soft: color-mix(in srgb, var(--seed-accent) 16%, var(--seed-surface) 84%);
+  --c-accent-fg: #0d0f12;
+  --c-danger: #c07a7c;
+  --c-danger-soft: color-mix(in srgb, #c07a7c 15%, var(--seed-surface) 85%);
+  --c-ok: #7ba893;
+  --c-ok-soft: color-mix(in srgb, #7ba893 15%, var(--seed-surface) 85%);
+}
+
+@theme inline {
+  --color-app: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-sunken: var(--c-sunken);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-subtle: var(--c-subtle);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-ok: var(--c-ok);
+  --color-ok-soft: var(--c-ok-soft);
+
+  --radius-card: 14px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    sans-serif;
+  --font-serif: 'Songti SC', 'Noto Serif SC', Georgia, serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--c-bg);
+    color: var(--c-fg);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.22s ease, color 0.22s ease;
+  }
+  * {
+    border-color: var(--c-line);
+  }
+  ::selection {
+    background: var(--c-accent-soft);
+    color: var(--c-fg);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--c-line-strong);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--c-muted);
+    background-clip: content-box;
+  }
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    font-size: inherit;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-card);
+  }
+  .card-pad {
+    padding: 1.25rem;
+  }
+  .card-hover {
+    transition: border-color 0.18s ease, transform 0.18s ease;
+  }
+  .card-hover:hover {
+    border-color: var(--c-line-strong);
+    transform: translateY(-1px);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9px;
+    border: 1px solid var(--c-line);
+    background: var(--c-surface);
+    color: var(--c-fg);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  .btn:hover {
+    border-color: var(--c-line-strong);
+    background: var(--c-sunken);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: var(--c-accent-fg);
+  }
+  .btn-primary:hover {
+    background: var(--c-accent-hover);
+    border-color: var(--c-accent-hover);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--c-muted);
+  }
+  .btn-ghost:hover {
+    background: var(--c-sunken);
+    border-color: transparent;
+    color: var(--c-fg);
+  }
+  .btn-danger {
+    color: var(--c-danger);
+    border-color: var(--c-line);
+  }
+  .btn-danger:hover {
+    background: var(--c-danger-soft);
+    border-color: var(--c-danger);
+  }
+  .btn-sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .input,
+  .textarea,
+  .select {
+    width: 100%;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    border-radius: 9px;
+    padding: 8px 11px;
+    color: var(--c-fg);
+    outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .input:focus,
+  .textarea:focus,
+  .select:focus {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-soft);
+  }
+  .input::placeholder,
+  .textarea::placeholder {
+    color: var(--c-subtle);
+  }
+  .textarea {
+    resize: vertical;
+    line-height: 1.7;
+  }
+  .select {
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--c-muted) 50%),
+      linear-gradient(135deg, var(--c-muted) 50%, transparent 50%);
+    background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+  }
+
+  .label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--c-muted);
+    margin-bottom: 6px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--c-sunken);
+    border: 1px solid var(--c-line);
+    color: var(--c-muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .chip-accent {
+    background: var(--c-accent-soft);
+    border-color: transparent;
+    color: var(--c-accent);
+  }
+
+  .link {
+    color: var(--c-accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .md {
+    font-size: 14px;
+    line-height: 1.85;
+    color: var(--c-fg);
+    word-break: break-word;
+  }
+  .md h1,
+  .md h2,
+  .md h3 {
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 1.6em 0 0.6em;
+  }
+  .md h1 {
+    font-size: 20px;
+  }
+  .md h2 {
+    font-size: 17px;
+  }
+  .md h3 {
+    font-size: 15px;
+  }
+  .md p {
+    margin: 0 0 0.9em;
+  }
+  .md ul,
+  .md ol {
+    margin: 0 0 0.9em;
+    padding-left: 1.4em;
+  }
+  .md li {
+    margin: 0.25em 0;
+  }
+  .md blockquote {
+    margin: 0 0 0.9em;
+    padding: 2px 0 2px 14px;
+    border-left: 2px solid var(--c-line-strong);
+    color: var(--c-muted);
+  }
+  .md code {
+    background: var(--c-sunken);
+    border: 1px solid var(--c-line);
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-size: 12.5px;
+  }
+  .md a {
+    color: var(--c-accent);
+  }
+  .md hr {
+    border: none;
+    border-top: 1px solid var(--c-line);
+    margin: 1.4em 0;
+  }
+  .md-wiki {
+    color: var(--c-accent);
+    border-bottom: 1px dashed var(--c-accent);
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
