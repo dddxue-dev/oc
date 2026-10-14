@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { EventItem } from '@/lib/types'
 import { Avatar, Field, Modal } from './ui'
 
@@ -26,8 +27,16 @@ export default function EventEditor({
   const [form, setForm] = useState({ ...EMPTY })
   const [tagText, setTagText] = useState('')
   const [charIds, setCharIds] = useState<string[]>([])
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const existing = useLiveQuery(() => db.events.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const existing =
+    useLiveQuery(() => db.events.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   const eras = Array.from(new Set(existing.map((e) => e.era).filter(Boolean))) as string[]
 
@@ -63,6 +72,7 @@ export default function EventEditor({
       .filter(Boolean)
     await db.events.put({
       id: initial?.id ?? uid(),
+      worldId,
       title: form.title.trim(),
       era: form.era || undefined,
       year: Number(form.year) || 0,

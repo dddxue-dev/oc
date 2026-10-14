@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   AlertTriangle,
   Check,
   Database,
   Download,
+  Globe2,
   Monitor,
   Moon,
   RefreshCw,
@@ -12,42 +13,122 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { db } from '@/lib/db'
+import { clearAll, db, now } from '@/lib/db'
 import { downloadBackup, importBackup } from '@/lib/backup'
 import { resetToSeed } from '@/lib/seed'
-import { useSetting } from '@/lib/settings'
+import { useWorld } from '@/lib/world'
 import { MODES, PRESETS, useTheme } from '@/lib/theme'
 import { Field, Modal, PageHeader } from '@/components/ui'
 
+/** 需要按世界观隔离、删除世界观时要一并清掉的表 */
+const SCOPED = [
+  'characters',
+  'worldEntries',
+  'events',
+  'gallery',
+  'stories',
+  'boards',
+  'posts',
+  'relations',
+  'nodePositions',
+] as const
+
 export default function SettingsPage() {
   const { preset, mode, setPreset, setMode } = useTheme()
-  const [worldName, setWorldName] = useSetting('worldName', '灰烬纪')
-  const [worldIntro, setWorldIntro] = useSetting('worldIntro', '')
+  const { worlds, worldId, world, setWorldId } = useWorld()
 
-  const [name, setName] = useState(worldName)
-  const [intro, setIntro] = useState(worldIntro)
+  const [name, setName] = useState(world?.name ?? '')
+  const [tagline, setTagline] = useState(world?.tagline ?? '')
+  const [era, setEra] = useState(world?.era ?? '')
+  const [intro, setIntro] = useState(world?.intro ?? '')
   const [saved, setSaved] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmWipe, setConfirmWipe] = useState(false)
+  const [confirmDelWorld, setConfirmDelWorld] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // 切换世界观时把表单同步成新世界观的内容
+  useEffect(() => {
+    setName(world?.name ?? '')
+    setTagline(world?.tagline ?? '')
+    setEra(world?.era ?? '')
+    setIntro(world?.intro ?? '')
+  }, [world])
+
   const counts = {
-    characters: useLiveQuery(() => db.characters.count(), []) ?? 0,
-    world: useLiveQuery(() => db.worldEntries.count(), []) ?? 0,
-    events: useLiveQuery(() => db.events.count(), []) ?? 0,
-    gallery: useLiveQuery(() => db.gallery.count(), []) ?? 0,
-    stories: useLiveQuery(() => db.stories.count(), []) ?? 0,
-    posts: useLiveQuery(() => db.posts.count(), []) ?? 0,
-    relations: useLiveQuery(() => db.relations.count(), []) ?? 0,
+    characters:
+      useLiveQuery(
+        () => db.characters.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    world:
+      useLiveQuery(
+        () => db.worldEntries.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    events:
+      useLiveQuery(
+        () => db.events.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    gallery:
+      useLiveQuery(
+        () => db.gallery.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    stories:
+      useLiveQuery(
+        () => db.stories.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    posts:
+      useLiveQuery(
+        () => db.posts.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    relations:
+      useLiveQuery(
+        () => db.relations.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
   }
 
   const saveInfo = async () => {
-    await setWorldName(name)
-    await setWorldIntro(intro)
+    if (!world) return
+    await db.worlds.put({
+      ...world,
+      name: name.trim() || world.name,
+      tagline: tagline.trim() || undefined,
+      era: era.trim() || undefined,
+      intro: intro.trim() || undefined,
+      updatedAt: now(),
+    })
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
+  }
+
+  const deleteWorld = async () => {
+    if (worlds.length <= 1) return
+    setBusy(true)
+    try {
+      const tables = SCOPED.map((n) => db.table(n))
+      await db.transaction('rw', [db.worlds, ...tables], async () => {
+        for (const t of tables) {
+          await t.where('worldId').equals(worldId).delete()
+        }
+        await db.worlds.delete(worldId)
+      })
+      const next = worlds.find((w) => w.id !== worldId)
+      if (next) setWorldId(next.id)
+      setMsg('已删除该世界观及其全部内容。')
+    } catch (e) {
+      setMsg('删除失败：' + (e as Error).message)
+    } finally {
+      setBusy(false)
+      setConfirmDelWorld(false)
+    }
   }
 
   const doExport = async () => {
@@ -67,7 +148,7 @@ export default function SettingsPage() {
     try {
       const r = await importBackup(file, mode)
       setMsg(
-        `导入完成：角色 ${r.characters}、词条 ${r.worldEntries}、事件 ${r.events}、画廊 ${r.gallery}、故事 ${r.stories}、帖子 ${r.posts}`
+        `导入完成：世界观 ${r.worlds}、角色 ${r.characters}、词条 ${r.worldEntries}、事件 ${r.events}、画廊 ${r.gallery}、故事 ${r.stories}、帖子 ${r.posts}`
       )
     } catch (e) {
       setMsg('导入失败：' + (e as Error).message)
@@ -78,7 +159,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="设置" subtitle="站点信息、外观主题与数据备份" />
+      <PageHeader title="设置" subtitle="当前世界观、外观主题与数据备份" />
 
       {msg ? (
         <div className="card mb-5 flex items-start gap-2.5 border-accent/40 bg-accent-soft px-4 py-3 text-[12.5px] text-accent">
@@ -91,15 +172,39 @@ export default function SettingsPage() {
       ) : null}
 
       <section id="site" className="card card-pad mb-5 scroll-mt-20">
-        <h2 className="mb-1 text-[14px] font-medium">站点信息</h2>
+        <h2 className="mb-1 flex items-center gap-2 text-[14px] font-medium">
+          <Globe2 size={15} />
+          当前世界观
+        </h2>
         <p className="mb-4 text-[12px] text-muted">
-          显示在总览页顶部的世界名与简介。
+          这里编辑的是<strong className="text-fg">左上角切换器选中的那个世界观</strong>。
+          共 {worlds.length} 个世界观，新建请用左上角切换器里的「新建世界观」。
         </p>
         <div className="grid max-w-[640px] gap-3">
-          <Field label="世界 / 站点名">
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+          <Field label="世界观名称">
+            <input
+              className="input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </Field>
-          <Field label="世界简介">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="副标题" hint="显示在切换器和总览页标题下">
+              <input
+                className="input"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+              />
+            </Field>
+            <Field label="纪年名" hint="如「灰烬历」「玄元历」">
+              <input
+                className="input"
+                value={era}
+                onChange={(e) => setEra(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Field label="世界简介" hint="显示在总览页顶部">
             <textarea
               className="textarea"
               rows={4}
@@ -107,10 +212,23 @@ export default function SettingsPage() {
               onChange={(e) => setIntro(e.target.value)}
             />
           </Field>
-          <div>
+          <div className="flex flex-wrap items-center gap-2">
             <button className="btn btn-primary" onClick={saveInfo}>
               {saved ? <Check size={14} /> : null}
               {saved ? '已保存' : '保存'}
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => setConfirmDelWorld(true)}
+              disabled={busy || worlds.length <= 1}
+              title={
+                worlds.length <= 1
+                  ? '至少要保留一个世界观'
+                  : '删除当前世界观及其全部内容'
+              }
+            >
+              <Trash2 size={14} />
+              删除此世界观
             </button>
           </div>
         </div>
@@ -181,10 +299,13 @@ export default function SettingsPage() {
           所有内容保存在<strong>当前浏览器的 IndexedDB</strong> 中，不会上传到任何服务器。
           清除浏览器数据、更换浏览器或使用隐私模式都会导致数据丢失，
           <strong className="text-fg">请定期导出备份</strong>。
+          <br />
+          下面的统计只针对<strong className="text-fg">当前世界观</strong>；导出备份会包含全部世界观。
         </p>
 
-        <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
           {[
+            ['世界观', worlds.length],
             ['角色', counts.characters],
             ['词条', counts.world],
             ['事件', counts.events],
@@ -245,7 +366,8 @@ export default function SettingsPage() {
         <div className="mt-4 flex items-start gap-2.5 rounded-[10px] border border-line bg-sunken px-3.5 py-3 text-[12px] text-muted">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
-            导入「覆盖」会先清空现有数据再写入；如需合并，可在导入前先导出当前备份。
+            导入「覆盖」会先清空现有数据再写入（世界观本身保留，备份里的会合并进来）；
+            「清空全部数据」只清内容，不会删掉世界观本身。
           </span>
         </div>
       </section>
@@ -255,8 +377,8 @@ export default function SettingsPage() {
         <p className="text-[12.5px] leading-[1.9] text-muted">
           OC Archive · 本地优先的原创角色记录站。
           <br />
-          六个板块：总览 / 世界观（词条 + 时间线）/ 人物档案（档案 + 关系图）/ 论坛 / 画廊 /
-          故事收录。
+          支持多个世界观并存，左上角可随时切换；人物 / 词条 / 时间线 / 论坛 / 画廊 / 故事
+          都按世界观各自独立。
           <br />
           正文支持 Markdown，用 <code>[[词条名]]</code> 可跨条目内链。
         </p>
@@ -279,7 +401,7 @@ export default function SettingsPage() {
                 await resetToSeed()
                 setBusy(false)
                 setConfirmReset(false)
-                setMsg('已恢复为内置示例数据。')
+                setMsg('已恢复为内置示例数据（灰烬纪 + 青冥问道）。')
               }}
             >
               确认恢复
@@ -288,7 +410,7 @@ export default function SettingsPage() {
         }
       >
         <p className="text-[13.5px] leading-[1.8]">
-          这会<strong>清空现有全部数据</strong>，并重新写入内置的示例世界。
+          这会<strong>清空现有全部数据与世界观</strong>，并重新写入内置的两个示例世界。
           <br />
           建议先导出备份。
         </p>
@@ -308,36 +430,10 @@ export default function SettingsPage() {
               className="btn btn-danger"
               onClick={async () => {
                 setBusy(true)
-                await db.transaction(
-                  'rw',
-                  [
-                    db.characters,
-                    db.worldEntries,
-                    db.events,
-                    db.gallery,
-                    db.stories,
-                    db.boards,
-                    db.posts,
-                    db.relations,
-                    db.nodePositions,
-                  ],
-                  async () => {
-                    await Promise.all([
-                      db.characters.clear(),
-                      db.worldEntries.clear(),
-                      db.events.clear(),
-                      db.gallery.clear(),
-                      db.stories.clear(),
-                      db.boards.clear(),
-                      db.posts.clear(),
-                      db.relations.clear(),
-                      db.nodePositions.clear(),
-                    ])
-                  }
-                )
+                await clearAll()
                 setBusy(false)
                 setConfirmWipe(false)
-                setMsg('已清空全部数据。')
+                setMsg('已清空全部内容（世界观本身保留）。')
               }}
             >
               确认清空
@@ -346,7 +442,30 @@ export default function SettingsPage() {
         }
       >
         <p className="text-[13.5px] leading-[1.8]">
-          此操作<strong>不可撤销</strong>，将删除全部角色、词条、事件、画作、故事与帖子。
+          此操作<strong>不可撤销</strong>，将删除<strong>所有世界观下</strong>的角色、词条、事件、画作、故事与帖子。
+          世界观本身会保留。
+        </p>
+      </Modal>
+
+      <Modal
+        open={confirmDelWorld}
+        onClose={() => setConfirmDelWorld(false)}
+        title="删除此世界观"
+        width={420}
+        footer={
+          <>
+            <button className="btn" onClick={() => setConfirmDelWorld(false)}>
+              取消
+            </button>
+            <button className="btn btn-danger" onClick={deleteWorld}>
+              确认删除
+            </button>
+          </>
+        }
+      >
+        <p className="text-[13.5px] leading-[1.8]">
+          将删除世界观「<strong>{world?.name}</strong>」以及它名下的
+          <strong>全部角色、词条、事件、画作、故事与帖子</strong>。此操作不可撤销。
         </p>
       </Modal>
     </div>

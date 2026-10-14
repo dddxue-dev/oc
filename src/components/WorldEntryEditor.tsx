@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { WORLD_CATEGORIES, type WorldEntry } from '@/lib/types'
 import { Field, Modal } from './ui'
 
@@ -23,7 +24,12 @@ export default function WorldEntryEditor({
 }) {
   const [form, setForm] = useState({ ...EMPTY })
   const [tagText, setTagText] = useState('')
-  const entries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const entries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   useEffect(() => {
     if (!open) return
@@ -53,6 +59,7 @@ export default function WorldEntryEditor({
       .filter(Boolean)
     await db.worldEntries.put({
       id: initial?.id ?? uid(),
+      worldId,
       title: form.title.trim(),
       category: form.category,
       parentId: form.parentId || undefined,

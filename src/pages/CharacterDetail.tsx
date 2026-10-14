@@ -4,10 +4,12 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Network, Pencil, Trash2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { useWikiResolver } from '@/lib/wiki'
+import { useWorldId } from '@/lib/world'
 import CharacterEditor from '@/components/CharacterEditor'
 import { Avatar, Chips, Empty, MarkdownView, Modal } from '@/components/ui'
 
 export default function CharacterDetail() {
+  const worldId = useWorldId()
   const { id = '' } = useParams()
   const nav = useNavigate()
   const resolve = useWikiResolver()
@@ -15,12 +17,31 @@ export default function CharacterDetail() {
   const [confirmDel, setConfirmDel] = useState(false)
 
   const character = useLiveQuery(() => db.characters.get(id), [id])
-  const relations = useLiveQuery(() => db.relations.toArray(), []) ?? []
-  const allChars = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const gallery = useLiveQuery(() => db.gallery.toArray(), []) ?? []
-  const stories = useLiveQuery(() => db.stories.toArray(), []) ?? []
-  const events = useLiveQuery(() => db.events.toArray(), []) ?? []
-  const posts = useLiveQuery(() => db.posts.toArray(), []) ?? []
+  const relations =
+    useLiveQuery(() => db.relations.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const allChars =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const gallery =
+    useLiveQuery(() => db.gallery.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const stories =
+    useLiveQuery(() => db.stories.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const events =
+    useLiveQuery(() => db.events.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const posts =
+    useLiveQuery(() => db.posts.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   const nameOf = useMemo(() => {
     const m = new Map(allChars.map((c) => [c.id, c]))

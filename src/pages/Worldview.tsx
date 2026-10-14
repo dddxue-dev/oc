@@ -3,18 +3,24 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Plus, Search } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { WorldEntry } from '@/lib/types'
 import { useParamState } from '@/lib/useParam'
 import WorldEntryEditor from '@/components/WorldEntryEditor'
 import { Chips, Empty, PageHeader } from '@/components/ui'
 
 export default function Worldview() {
+  const worldId = useWorldId()
   const [cat, setCat] = useParamState('cat')
   const [q, setQ] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<WorldEntry | null>(null)
 
-  const entries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const entries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries])
 
   const list = useMemo(() => {

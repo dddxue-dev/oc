@@ -3,17 +3,23 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Network, Plus, Search, Users } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { Character } from '@/lib/types'
 import CharacterEditor from '@/components/CharacterEditor'
 import { Avatar, Chips, Empty, PageHeader } from '@/components/ui'
 
 export default function Characters() {
+  const worldId = useWorldId()
   const [q, setQ] = useState('')
   const [tag, setTag] = useState<string | null>(null)
   const [editing, setEditing] = useState<Character | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
 
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   const allTags = useMemo(
     () => Array.from(new Set(characters.flatMap((c) => c.tags))).slice(0, 20),

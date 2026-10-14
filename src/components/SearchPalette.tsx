@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { BookOpen, Globe2, Images, MessagesSquare, Search, Users } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { plainText } from '@/lib/markdown'
 import { avatarUrl } from '@/lib/placeholder'
 
@@ -27,13 +28,34 @@ export default function SearchPalette({
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const nav = useNavigate()
+  const worldId = useWorldId()
 
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const world = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
-  const events = useLiveQuery(() => db.events.toArray(), []) ?? []
-  const gallery = useLiveQuery(() => db.gallery.toArray(), []) ?? []
-  const stories = useLiveQuery(() => db.stories.toArray(), []) ?? []
-  const posts = useLiveQuery(() => db.posts.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const world =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const events =
+    useLiveQuery(() => db.events.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const gallery =
+    useLiveQuery(() => db.gallery.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const stories =
+    useLiveQuery(() => db.stories.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const posts =
+    useLiveQuery(() => db.posts.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   useEffect(() => {
     if (open) {

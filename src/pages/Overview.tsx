@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react'
 import { db } from '@/lib/db'
-import { useSetting } from '@/lib/settings'
+import { useWorld } from '@/lib/world'
 import { avatarUrl } from '@/lib/placeholder'
 import { plainText } from '@/lib/markdown'
 import { Avatar, Chips, PageHeader, StatCard } from '@/components/ui'
@@ -27,18 +27,34 @@ function relTime(ts: number) {
 
 export default function Overview() {
   const nav = useNavigate()
-  const [worldName] = useSetting('worldName', '灰烬纪')
-  const [worldIntro] = useSetting(
-    'worldIntro',
-    '灰烬沉降之后，沿岸文明在长夜里重建。这里记录着他们——十二座灯塔、一个军团，以及所有被记住和正在被遗忘的人。'
-  )
+  const { worldId, world: meta } = useWorld()
 
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const world = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
-  const events = useLiveQuery(() => db.events.toArray(), []) ?? []
-  const gallery = useLiveQuery(() => db.gallery.toArray(), []) ?? []
-  const stories = useLiveQuery(() => db.stories.toArray(), []) ?? []
-  const posts = useLiveQuery(() => db.posts.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const world =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const events =
+    useLiveQuery(() => db.events.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const gallery =
+    useLiveQuery(() => db.gallery.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const stories =
+    useLiveQuery(() => db.stories.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const posts =
+    useLiveQuery(() => db.posts.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   const recent = useMemo(() => {
     const rows: { ts: number; title: string; kind: string; sub: string; href: string }[] = []
@@ -119,14 +135,21 @@ export default function Overview() {
   return (
     <div>
       <PageHeader
-        title={worldName}
-        subtitle="本地优先的原创角色档案 · 所有数据仅保存在本机"
+        title={meta?.name ?? '未命名世界观'}
+        subtitle={
+          [meta?.era, meta?.tagline].filter(Boolean).join(' · ') ||
+          '本地优先的原创角色档案 · 所有数据仅保存在本机'
+        }
       />
 
-      <div className="card card-pad mb-5">
-        <div className="mb-1.5 text-[12px] font-medium text-muted">世界简介</div>
-        <p className="max-w-[760px] text-[14px] leading-[1.85]">{worldIntro}</p>
-      </div>
+      {meta?.intro || meta?.tagline ? (
+        <div className="card card-pad mb-5">
+          <div className="mb-1.5 text-[12px] font-medium text-muted">世界简介</div>
+          <p className="max-w-[760px] text-[14px] leading-[1.85]">
+            {meta?.intro || meta?.tagline}
+          </p>
+        </div>
+      ) : null}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard

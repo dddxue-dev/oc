@@ -21,6 +21,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { LayoutGrid, Link2, Plus, Trash2 } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { Character, Relation } from '@/lib/types'
 import { RELATION_PRESETS } from '@/lib/types'
 import { avatarUrl } from '@/lib/placeholder'
@@ -75,9 +76,21 @@ function CharNode({ data, selected }: NodeProps) {
 const nodeTypes = { char: CharNode }
 
 function GraphInner() {
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const relations = useLiveQuery(() => db.relations.toArray(), []) ?? []
-  const positions = useLiveQuery(() => db.nodePositions.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const relations =
+    useLiveQuery(() => db.relations.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const positions =
+    useLiveQuery(
+      () => db.nodePositions.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -138,9 +151,14 @@ function GraphInner() {
 
   const onNodeDragStop = useCallback(
     (_: unknown, node: Node) => {
-      db.nodePositions.put({ id: node.id, x: node.position.x, y: node.position.y })
+      void db.nodePositions.put({
+        id: node.id,
+        worldId,
+        x: node.position.x,
+        y: node.position.y,
+      })
     },
-    []
+    [worldId]
   )
 
   const onConnect = useCallback((conn: Connection) => {
@@ -162,6 +180,7 @@ function GraphInner() {
     }
     const rel: Relation = {
       id: uid(),
+      worldId,
       source: pending.source,
       target: pending.target,
       label: final,
@@ -179,12 +198,13 @@ function GraphInner() {
     const total = characters.length
     const r = Math.max(220, total * 34)
     await db.transaction('rw', db.nodePositions, async () => {
-      await db.nodePositions.clear()
+      await db.nodePositions.where('worldId').equals(worldId).delete()
       await Promise.all(
         characters.map((c, i) => {
           const a = (i / Math.max(total, 1)) * Math.PI * 2 - Math.PI / 2
           return db.nodePositions.put({
             id: c.id,
+            worldId,
             x: 420 + Math.cos(a) * r,
             y: 300 + Math.sin(a) * r,
           })

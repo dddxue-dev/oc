@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react'
 import { db, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { ForumBoard, ForumPost } from '@/lib/types'
 import { useParamState } from '@/lib/useParam'
 import PostEditor from '@/components/PostEditor'
@@ -30,6 +31,7 @@ function relTime(ts: number) {
 }
 
 export default function Forum() {
+  const worldId = useWorldId()
   const [boardId, setBoardId] = useParamState('board')
   const [q, setQ] = useState('')
   const [postOpen, setPostOpen] = useState(false)
@@ -39,8 +41,15 @@ export default function Forum() {
   const [boardName, setBoardName] = useState('')
   const [boardDesc, setBoardDesc] = useState('')
 
-  const boards = useLiveQuery(() => db.boards.orderBy('order').toArray(), []) ?? []
-  const posts = useLiveQuery(() => db.posts.toArray(), []) ?? []
+  const boards =
+    useLiveQuery(
+      () => db.boards.where('worldId').equals(worldId).sortBy('order'),
+      [worldId]
+    ) ?? []
+  const posts =
+    useLiveQuery(() => db.posts.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   const currentBoard = boards.find((b) => b.id === boardId)
 
@@ -72,6 +81,7 @@ export default function Forum() {
     if (!boardName.trim()) return
     await db.boards.put({
       id: editingBoard?.id ?? uid(),
+      worldId,
       name: boardName.trim(),
       description: boardDesc,
       order: editingBoard?.order ?? boards.length + 1,

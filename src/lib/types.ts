@@ -1,7 +1,30 @@
 /** 数据模型定义 —— 全部实体都存本地 IndexedDB */
 
+/**
+ * 世界观（顶层容器）。
+ * 站内所有业务数据（人物 / 词条 / 事件 / 画廊 / 故事 / 论坛 / 关系图）
+ * 都必须挂在某一个世界观下，切换世界观 = 整站内容切换。
+ */
+export interface World {
+  id: string
+  /** 名称，如「灰烬纪」「青冥问道」 */
+  name: string
+  /** 一句话副标题，显示在切换器与总览页 */
+  tagline?: string
+  /** 总览页的「世界简介」长文 */
+  intro?: string
+  /** 纪年名，如「灰烬历」「玄元历」 */
+  era?: string
+  /** 代表色（切换器色点） */
+  accent?: string
+  order: number
+  createdAt: number
+  updatedAt: number
+}
+
 export interface Character {
   id: string
+  worldId: string
   name: string
   /** 代称 / 称号 / 化名 */
   alias?: string
@@ -28,6 +51,7 @@ export interface Character {
 /** 世界观词条（树状，支持分类与内链） */
 export interface WorldEntry {
   id: string
+  worldId: string
   title: string
   /** 地理 / 历史 / 体系 / 种族 / 组织 / 术语 …… */
   category: string
@@ -42,6 +66,7 @@ export interface WorldEntry {
 /** 事件（时间线的基本单元，年份支持负数表示「创世前」） */
 export interface EventItem {
   id: string
+  worldId: string
   title: string
   /** 纪年名，如「创世纪」「灰烬历」 */
   era?: string
@@ -58,6 +83,7 @@ export interface EventItem {
 
 export interface GalleryItem {
   id: string
+  worldId: string
   title: string
   /** data URL */
   image: string
@@ -72,13 +98,14 @@ export interface GalleryItem {
 
 export interface Story {
   id: string
+  worldId: string
   title: string
   cover?: string
   summary?: string
   content?: string
   status?: string
-  /** 所属世界观（指向 WorldEntry.id，通常选顶层词条） */
-  worldId?: string
+  /** 所属世界观词条（指向 WorldEntry.id，通常选顶层词条） */
+  entryId?: string
   tags: string[]
   characterIds: string[]
   createdAt: number
@@ -87,6 +114,7 @@ export interface Story {
 
 export interface ForumBoard {
   id: string
+  worldId: string
   name: string
   description?: string
   order: number
@@ -104,6 +132,7 @@ export interface ForumReply {
 
 export interface ForumPost {
   id: string
+  worldId: string
   boardId: string
   title: string
   content: string
@@ -120,6 +149,7 @@ export interface ForumPost {
 /** 关系图连线 */
 export interface Relation {
   id: string
+  worldId: string
   source: string
   target: string
   label: string
@@ -128,6 +158,7 @@ export interface Relation {
 /** 关系图节点坐标 */
 export interface NodePos {
   id: string
+  worldId: string
   x: number
   y: number
 }
@@ -142,6 +173,7 @@ export interface BackupFile {
   version: number
   exportedAt: number
   data: {
+    worlds: World[]
     characters: Character[]
     worldEntries: WorldEntry[]
     events: EventItem[]
@@ -185,4 +217,16 @@ export const RELATION_PRESETS = [
   '单恋',
   '认识',
   '其他',
+] as const
+
+/** 切换器 / 新建世界观时可选的色点 */
+export const WORLD_ACCENTS = [
+  '#5b7fa6',
+  '#a6474a',
+  '#4f7a63',
+  '#6f6aa3',
+  '#9a7448',
+  '#4a7d84',
+  '#8a5a72',
+  '#5f6368',
 ] as const

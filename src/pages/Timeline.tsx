@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { EventItem } from '@/lib/types'
 import { useWikiResolver } from '@/lib/wiki'
 import EventEditor from '@/components/EventEditor'
@@ -14,6 +15,7 @@ export function formatYear(era: string | undefined, year: number) {
 }
 
 export default function Timeline() {
+  const worldId = useWorldId()
   const [params] = useSearchParams()
   const focus = params.get('focus')
   const resolve = useWikiResolver()
@@ -26,8 +28,15 @@ export default function Timeline() {
   const [confirmDel, setConfirmDel] = useState<EventItem | null>(null)
   const focusRef = useRef<HTMLDivElement>(null)
 
-  const events = useLiveQuery(() => db.events.toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const events =
+    useLiveQuery(() => db.events.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const charMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters])
 
   const eras = useMemo(

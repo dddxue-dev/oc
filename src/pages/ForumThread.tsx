@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Pencil, Pin, Send, Trash2, UserRound } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { avatarUrl } from '@/lib/placeholder'
 import type { ForumPost } from '@/lib/types'
 import { useWikiResolver } from '@/lib/wiki'
@@ -20,6 +21,7 @@ function relTime(ts: number) {
 }
 
 export default function ForumThread() {
+  const worldId = useWorldId()
   const { id = '' } = useParams()
   const nav = useNavigate()
   const resolve = useWikiResolver()
@@ -31,8 +33,16 @@ export default function ForumThread() {
   const [guestName, setGuestName] = useState('')
 
   const post = useLiveQuery(() => db.posts.get(id), [id])
-  const boards = useLiveQuery(() => db.boards.toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const boards =
+    useLiveQuery(
+      () => db.boards.where('worldId').equals(worldId).sortBy('order'),
+      [worldId]
+    ) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   if (post === undefined) {
     return <div className="py-20 text-center text-[13px] text-subtle">载入中…</div>

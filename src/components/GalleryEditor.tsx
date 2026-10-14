@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ImagePlus, Wand2 } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { artUrl } from '@/lib/placeholder'
 import { GALLERY_CATEGORIES, type GalleryItem } from '@/lib/types'
 import { Avatar, Field, Modal } from './ui'
@@ -27,8 +28,13 @@ export default function GalleryEditor({
   const [form, setForm] = useState({ ...EMPTY })
   const [tagText, setTagText] = useState('')
   const [charIds, setCharIds] = useState<string[]>([])
+  const worldId = useWorldId()
   const fileRef = useRef<HTMLInputElement>(null)
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   useEffect(() => {
     if (!open) return
@@ -68,6 +74,7 @@ export default function GalleryEditor({
       .filter(Boolean)
     await db.gallery.put({
       id: initial?.id ?? uid(),
+      worldId,
       title: form.title.trim(),
       image: form.image || artUrl(Math.floor(Math.random() * 9999), form.title.trim()),
       artist: form.artist,

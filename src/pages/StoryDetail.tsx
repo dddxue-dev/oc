@@ -4,10 +4,12 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Globe2, Pencil, Trash2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { useWikiResolver } from '@/lib/wiki'
+import { useWorldId } from '@/lib/world'
 import StoryEditor from '@/components/StoryEditor'
 import { Avatar, Chips, Empty, MarkdownView, Modal } from '@/components/ui'
 
 export default function StoryDetail() {
+  const worldId = useWorldId()
   const { id = '' } = useParams()
   const nav = useNavigate()
   const resolve = useWikiResolver()
@@ -15,8 +17,16 @@ export default function StoryDetail() {
   const [confirmDel, setConfirmDel] = useState(false)
 
   const story = useLiveQuery(() => db.stories.get(id), [id])
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const worldEntries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const worldEntries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const charMap = new Map(characters.map((c) => [c.id, c]))
 
   if (story === undefined) {
@@ -89,16 +99,16 @@ export default function StoryDetail() {
         </article>
 
         <aside className="flex flex-col gap-4">
-          {s.worldId ? (
+          {s.entryId ? (
             <section className="card card-pad">
               <h2 className="mb-2.5 text-[13.5px] font-medium">世界观</h2>
               <Link
-                to={`/world/${s.worldId}`}
+                to={`/world/${s.entryId}`}
                 className="flex items-center gap-2 rounded-[9px] border border-line px-2.5 py-1.5 text-[12.5px] transition-colors hover:border-line-strong"
               >
                 <Globe2 size={13} className="shrink-0 text-subtle" />
                 <span className="truncate">
-                  {worldEntries.find((w) => w.id === s.worldId)?.title ?? '未知词条'}
+                  {worldEntries.find((w) => w.id === s.entryId)?.title ?? '未知词条'}
                 </span>
               </Link>
             </section>

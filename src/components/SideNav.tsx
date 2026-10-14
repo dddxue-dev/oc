@@ -10,13 +10,14 @@ import {
   Users,
 } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { GALLERY_CATEGORIES, STORY_STATUS, WORLD_CATEGORIES } from '@/lib/types'
 import { avatarUrl } from '@/lib/placeholder'
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-5">
-      <div className="mb-1.5 px-2 text-[11px] font-medium tracking-wide text-subtle">
+    <div className="mb-4">
+      <div className="mb-1 px-1.5 text-[10.5px] font-medium tracking-wide text-subtle">
         {title}
       </div>
       <div className="flex flex-col gap-0.5">{children}</div>
@@ -25,7 +26,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 const itemCls = (active: boolean) =>
-  `flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[12.5px] transition-colors ${
+  `flex items-center gap-1.5 rounded-[7px] px-1.5 py-1 text-[12px] transition-colors ${
     active
       ? 'bg-accent-soft font-medium text-accent'
       : 'text-muted hover:bg-sunken hover:text-fg'
@@ -91,7 +92,7 @@ function SideEntity({
       <img
         src={avatar || avatarUrl(name, color)}
         alt=""
-        className="h-5 w-5 shrink-0 rounded-full border border-line object-cover"
+        className="h-[18px] w-[18px] shrink-0 rounded-full border border-line object-cover"
       />
       <span className="min-w-0 flex-1 truncate">{name}</span>
       {sub ? <span className="shrink-0 text-[10.5px] text-subtle">{sub}</span> : null}
@@ -102,15 +103,44 @@ function SideEntity({
 /* ---------------- 各板块的侧边导航 ---------------- */
 
 function OverviewSide() {
+  const worldId = useWorldId()
   const counts = {
-    characters: useLiveQuery(() => db.characters.count(), []) ?? 0,
-    world: useLiveQuery(() => db.worldEntries.count(), []) ?? 0,
-    events: useLiveQuery(() => db.events.count(), []) ?? 0,
-    gallery: useLiveQuery(() => db.gallery.count(), []) ?? 0,
-    stories: useLiveQuery(() => db.stories.count(), []) ?? 0,
-    posts: useLiveQuery(() => db.posts.count(), []) ?? 0,
+    characters:
+      useLiveQuery(
+        () => db.characters.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    world:
+      useLiveQuery(
+        () => db.worldEntries.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    events:
+      useLiveQuery(
+        () => db.events.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    gallery:
+      useLiveQuery(
+        () => db.gallery.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    stories:
+      useLiveQuery(
+        () => db.stories.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
+    posts:
+      useLiveQuery(
+        () => db.posts.where('worldId').equals(worldId).count(),
+        [worldId]
+      ) ?? 0,
   }
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   return (
     <>
@@ -141,11 +171,16 @@ function OverviewSide() {
 }
 
 function WorldSide() {
+  const worldId = useWorldId()
   const { pathname } = useLocation()
   const [params] = useSearchParams()
   const cat = params.get('cat')
 
-  const entries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const entries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const counts: Record<string, number> = {}
   entries.forEach((e) => (counts[e.category] = (counts[e.category] || 0) + 1))
   const present = Array.from(new Set(entries.map((e) => e.category)))
@@ -183,7 +218,7 @@ function WorldSide() {
         </Group>
       ) : (
         <Group title="时间线">
-          <div className="px-2 text-[11.5px] leading-[1.7] text-subtle">
+          <div className="px-1.5 text-[11px] leading-[1.7] text-subtle">
             按纪年排序。点击事件卡片可展开详情。
           </div>
         </Group>
@@ -193,7 +228,12 @@ function WorldSide() {
 }
 
 function CharacterSide() {
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const sorted = [...characters].sort((a, b) =>
     a.name.localeCompare(b.name, 'zh-Hans-CN')
   )
@@ -224,12 +264,20 @@ function CharacterSide() {
 }
 
 function GallerySide() {
+  const worldId = useWorldId()
   const [params] = useSearchParams()
   const cat = params.get('cat')
   const char = params.get('char')
 
-  const items = useLiveQuery(() => db.gallery.toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const items =
+    useLiveQuery(() => db.gallery.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   const counts: Record<string, number> = {}
   items.forEach((i) => {
@@ -293,12 +341,20 @@ function GallerySide() {
 }
 
 function StorySide() {
+  const worldId = useWorldId()
   const [params] = useSearchParams()
   const status = params.get('status')
   const world = params.get('world')
 
-  const stories = useLiveQuery(() => db.stories.toArray(), []) ?? []
-  const worldEntries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const stories =
+    useLiveQuery(() => db.stories.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const worldEntries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const sorted = [...stories].sort((a, b) => b.updatedAt - a.updatedAt)
 
   /** 生成「只改一个筛选维度、其余保持」的链接 */
@@ -320,7 +376,7 @@ function StorySide() {
 
   const worldCounts: Record<string, number> = {}
   stories.forEach((s) => {
-    if (s.worldId) worldCounts[s.worldId] = (worldCounts[s.worldId] || 0) + 1
+    if (s.entryId) worldCounts[s.entryId] = (worldCounts[s.entryId] || 0) + 1
   })
   const usedWorlds = worldEntries
     .filter((w) => worldCounts[w.id])
@@ -359,7 +415,7 @@ function StorySide() {
             />
           ))
         ) : (
-          <div className="px-2 py-1 text-[11.5px] text-subtle">尚未关联</div>
+          <div className="px-1.5 py-1 text-[11px] text-subtle">尚未关联</div>
         )}
       </Group>
 
@@ -375,11 +431,19 @@ function StorySide() {
 }
 
 function ForumSide() {
+  const worldId = useWorldId()
   const [params] = useSearchParams()
   const boardId = params.get('board')
 
-  const boards = useLiveQuery(() => db.boards.orderBy('order').toArray(), []) ?? []
-  const posts = useLiveQuery(() => db.posts.toArray(), []) ?? []
+  const boards =
+    useLiveQuery(
+      () => db.boards.where('worldId').equals(worldId).sortBy('order'),
+      [worldId]
+    ) ?? []
+  const posts =
+    useLiveQuery(() => db.posts.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
 
   const counts: Record<string, number> = {}
   posts.forEach((p) => (counts[p.boardId] = (counts[p.boardId] || 0) + 1))
@@ -420,7 +484,7 @@ function SettingsSide() {
           {label}
         </button>
       ))}
-      <div className="px-2 pt-2 text-[11px] leading-[1.7] text-subtle">
+      <div className="px-1.5 pt-2 text-[10.5px] leading-[1.7] text-subtle">
         数据保存在本机浏览器，请定期导出备份。
       </div>
     </Group>

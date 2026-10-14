@@ -1,5 +1,6 @@
-import { db, uid } from './db'
+import { db, DEFAULT_WORLD_ID, uid, XIANXIA_WORLD_ID } from './db'
 import { artUrl, avatarUrl } from './placeholder'
+import { XIANXIA } from './seed-xianxia'
 import type {
   Character,
   EventItem,
@@ -9,6 +10,7 @@ import type {
   NodePos,
   Relation,
   Story,
+  World,
   WorldEntry,
 } from './types'
 
@@ -22,13 +24,13 @@ const C = {
   jianmo: 'char-jianmo',
 }
 
-function makeCharacters(): Character[] {
+function makeCharacters(): Omit<Character, 'worldId'>[] {
   const base = (
     id: string,
     name: string,
     color: string,
-    extra: Partial<Character>
-  ): Character => ({
+    extra: Partial<Omit<Character, 'worldId'>>
+  ): Omit<Character, 'worldId'> => ({
     id,
     name,
     color,
@@ -119,7 +121,7 @@ function makeCharacters(): Character[] {
   ]
 }
 
-function makeWorld(): WorldEntry[] {
+function makeWorld(): Omit<WorldEntry, 'worldId'>[] {
   const e = (
     id: string,
     title: string,
@@ -128,7 +130,7 @@ function makeWorld(): WorldEntry[] {
     content: string,
     tags: string[],
     parentId?: string
-  ): WorldEntry => ({
+  ): Omit<WorldEntry, 'worldId'> => ({
     id,
     title,
     category,
@@ -195,7 +197,7 @@ function makeWorld(): WorldEntry[] {
   ]
 }
 
-function makeEvents(): EventItem[] {
+function makeEvents(): Omit<EventItem, 'worldId'>[] {
   const ev = (
     id: string,
     title: string,
@@ -206,7 +208,7 @@ function makeEvents(): EventItem[] {
     tags: string[],
     characterIds: string[] = [],
     endYear?: number
-  ): EventItem => ({
+  ): Omit<EventItem, 'worldId'> => ({
     id,
     title,
     era,
@@ -275,7 +277,7 @@ function makeEvents(): EventItem[] {
   ]
 }
 
-function makeGallery(): GalleryItem[] {
+function makeGallery(): Omit<GalleryItem, 'worldId'>[] {
   const g = (
     id: string,
     title: string,
@@ -286,7 +288,7 @@ function makeGallery(): GalleryItem[] {
     tags: string[],
     characterIds: string[],
     date: string
-  ): GalleryItem => ({
+  ): Omit<GalleryItem, 'worldId'> => ({
     id,
     title,
     image: artUrl(seed, ''),
@@ -369,7 +371,7 @@ function makeGallery(): GalleryItem[] {
   ]
 }
 
-function makeStories(): Story[] {
+function makeStories(): Omit<Story, 'worldId'>[] {
   const s = (
     id: string,
     title: string,
@@ -379,15 +381,15 @@ function makeStories(): Story[] {
     status: string,
     tags: string[],
     characterIds: string[],
-    worldId?: string
-  ): Story => ({
+    entryId?: string
+  ): Omit<Story, 'worldId'> => ({
     id,
     title,
     cover: artUrl(seed, '', 600, 340),
     summary,
     content,
     status,
-    worldId,
+    entryId,
     tags,
     characterIds,
     createdAt: D(40),
@@ -431,7 +433,7 @@ function makeStories(): Story[] {
   ]
 }
 
-function makeBoards(): ForumBoard[] {
+function makeBoards(): Omit<ForumBoard, 'worldId'>[] {
   return [
     { id: 'board-notice', name: '公告板', description: '设定更新、连载进度、重要通知', order: 1 },
     { id: 'board-lore', name: '设定议事厅', description: '讨论世界观、体系与设定的合理性', order: 2 },
@@ -440,7 +442,7 @@ function makeBoards(): ForumBoard[] {
   ]
 }
 
-function makePosts(): ForumPost[] {
+function makePosts(): Omit<ForumPost, 'worldId'>[] {
   const p = (
     id: string,
     boardId: string,
@@ -452,7 +454,7 @@ function makePosts(): ForumPost[] {
     days: number,
     replies: { content: string; authorId?: string; name: string; color?: string; days: number }[] = [],
     pinned = false
-  ): ForumPost => ({
+  ): Omit<ForumPost, 'worldId'> => ({
     id,
     boardId,
     title,
@@ -586,8 +588,13 @@ function makePosts(): ForumPost[] {
   ]
 }
 
-function makeRelations(): Relation[] {
-  const r = (id: string, source: string, target: string, label: string): Relation => ({
+function makeRelations(): Omit<Relation, 'worldId'>[] {
+  const r = (
+    id: string,
+    source: string,
+    target: string,
+    label: string
+  ): Omit<Relation, 'worldId'> => ({
     id,
     source,
     target,
@@ -603,7 +610,7 @@ function makeRelations(): Relation[] {
   ]
 }
 
-function makePositions(): NodePos[] {
+function makePositions(): Omit<NodePos, 'worldId'>[] {
   return [
     { id: C.shen, x: 320, y: 60 },
     { id: C.bailu, x: 120, y: 220 },
@@ -613,107 +620,154 @@ function makePositions(): NodePos[] {
   ]
 }
 
-/**
- * 一次性补全示例故事的「世界观」字段，并清掉已废弃的「章节」字段。
- * 只写缺失字段（不覆盖用户已改的内容）；用 settings 标记只跑一次。
- */
-async function backfillStoryWorld() {
-  const done = await db.settings.get('seed.storyWorldBackfillV2')
-  if (done) return
+/* ---------------- 世界观与播种 ---------------- */
 
-  const patch: Record<string, string> = {
-    'story-1': 'world-ashensea',
-    'story-2': 'world-legion',
-    'story-3': 'world-longnight',
+/** 给一组「没有 worldId」的记录统一打上世界观归属 */
+function tag<T>(rows: Omit<T, 'worldId'>[], worldId: string): T[] {
+  return rows.map((r) => ({ ...r, worldId })) as T[]
+}
+
+function ashenWorld(ts: number): World {
+  return {
+    id: DEFAULT_WORLD_ID,
+    name: '灰烬纪',
+    tagline: '灰烬沉降之后，沿岸文明在长夜里重建',
+    intro:
+      '灰烬沉降之后，沿岸文明在长夜里重建。这里记录着他们——十二座灯塔、一个军团，以及所有被记住和正在被遗忘的人。',
+    era: '灰烬历',
+    accent: '#5b7fa6',
+    order: 0,
+    createdAt: ts,
+    updatedAt: ts,
   }
+}
 
-  await db.transaction('rw', [db.stories, db.settings], async () => {
-    for (const [id, worldId] of Object.entries(patch)) {
-      await db.stories
-        .where('id')
-        .equals(id)
-        .modify((s) => {
-          if (s.worldId === undefined) s.worldId = worldId
-          const rec = s as Story & { chapter?: unknown }
-          if (rec.chapter !== undefined) delete rec.chapter
-        })
-    }
-    await db.settings.delete('seed.storyWorldBackfill')
-    await db.settings.put({ key: 'seed.storyWorldBackfillV2', value: 1 })
+function xianxiaWorld(ts: number): World {
+  return {
+    id: XIANXIA_WORLD_ID,
+    name: XIANXIA.name,
+    tagline: XIANXIA.tagline,
+    intro: XIANXIA.intro,
+    era: XIANXIA.era,
+    accent: XIANXIA.accent,
+    order: 1,
+    createdAt: ts,
+    updatedAt: ts,
+  }
+}
+
+const ALL_TABLES = () => [
+  db.worlds,
+  db.characters,
+  db.worldEntries,
+  db.events,
+  db.gallery,
+  db.stories,
+  db.boards,
+  db.posts,
+  db.relations,
+  db.nodePositions,
+]
+
+/** 全新库：把两个世界观的全部示例内容一起写进去 */
+async function seedFresh() {
+  const ts = D(60)
+
+  const worlds = [ashenWorld(ts), xianxiaWorld(ts)]
+  const characters = [
+    ...tag<Character>(makeCharacters(), DEFAULT_WORLD_ID),
+    ...XIANXIA.characters,
+  ]
+  const worldEntries = [
+    ...tag<WorldEntry>(makeWorld(), DEFAULT_WORLD_ID),
+    ...XIANXIA.worldEntries,
+  ]
+  const events = [
+    ...tag<EventItem>(makeEvents(), DEFAULT_WORLD_ID),
+    ...XIANXIA.events,
+  ]
+  const gallery = [
+    ...tag<GalleryItem>(makeGallery(), DEFAULT_WORLD_ID),
+    ...XIANXIA.gallery,
+  ]
+  const stories = [
+    ...tag<Story>(makeStories(), DEFAULT_WORLD_ID),
+    ...XIANXIA.stories,
+  ]
+  const boards = [
+    ...tag<ForumBoard>(makeBoards(), DEFAULT_WORLD_ID),
+    ...XIANXIA.boards,
+  ]
+  const posts = [...tag<ForumPost>(makePosts(), DEFAULT_WORLD_ID), ...XIANXIA.posts]
+  const relations = [
+    ...tag<Relation>(makeRelations(), DEFAULT_WORLD_ID),
+    ...XIANXIA.relations,
+  ]
+  const nodePositions = [
+    ...tag<NodePos>(makePositions(), DEFAULT_WORLD_ID),
+    ...XIANXIA.nodePositions,
+  ]
+
+  await db.transaction('rw', ALL_TABLES(), async () => {
+    await db.worlds.bulkPut(worlds)
+    await db.characters.bulkPut(characters)
+    await db.worldEntries.bulkPut(worldEntries)
+    await db.events.bulkPut(events)
+    await db.gallery.bulkPut(gallery)
+    await db.stories.bulkPut(stories)
+    await db.boards.bulkPut(boards)
+    await db.posts.bulkPut(posts)
+    await db.relations.bulkPut(relations)
+    await db.nodePositions.bulkPut(nodePositions)
+  })
+}
+
+/**
+ * 老库（只有灰烬纪）补上第二个世界观。
+ * 只追加「青冥问道」的数据，绝不碰用户已有的内容。
+ */
+async function seedXianxiaOnly() {
+  await db.transaction('rw', ALL_TABLES(), async () => {
+    await db.worlds.put(xianxiaWorld(D(30)))
+    await db.characters.bulkPut(XIANXIA.characters)
+    await db.worldEntries.bulkPut(XIANXIA.worldEntries)
+    await db.events.bulkPut(XIANXIA.events)
+    await db.gallery.bulkPut(XIANXIA.gallery)
+    await db.stories.bulkPut(XIANXIA.stories)
+    await db.boards.bulkPut(XIANXIA.boards)
+    await db.posts.bulkPut(XIANXIA.posts)
+    await db.relations.bulkPut(XIANXIA.relations)
+    await db.nodePositions.bulkPut(XIANXIA.nodePositions)
   })
 }
 
 export async function seedIfEmpty() {
-  const count = await db.characters.count()
-  if (count > 0) {
-    await backfillStoryWorld()
+  const charCount = await db.characters.count()
+
+  if (charCount === 0) {
+    await seedFresh()
     return
   }
 
-  const characters = makeCharacters()
-  const worldEntries = makeWorld()
-  const events = makeEvents()
-  const gallery = makeGallery()
-  const stories = makeStories()
-  const boards = makeBoards()
-  const posts = makePosts()
-  const relations = makeRelations()
-  const nodePositions = makePositions()
-
-  await db.transaction(
-    'rw',
-    [
-      db.characters,
-      db.worldEntries,
-      db.events,
-      db.gallery,
-      db.stories,
-      db.boards,
-      db.posts,
-      db.relations,
-      db.nodePositions,
-    ],
-    async () => {
-      await db.characters.bulkPut(characters)
-      await db.worldEntries.bulkPut(worldEntries)
-      await db.events.bulkPut(events)
-      await db.gallery.bulkPut(gallery)
-      await db.stories.bulkPut(stories)
-      await db.boards.bulkPut(boards)
-      await db.posts.bulkPut(posts)
-      await db.relations.bulkPut(relations)
-      await db.nodePositions.bulkPut(nodePositions)
-    }
-  )
+  // 老库：Dexie 的 v2 升级已经把存量数据归到灰烬纪了，这里只补第二个世界观
+  const hasXianxia = await db.worlds.get(XIANXIA_WORLD_ID)
+  if (!hasXianxia) await seedXianxiaOnly()
 }
 
 export async function resetToSeed() {
-  await db.transaction(
-    'rw',
-    [
-      db.characters,
-      db.worldEntries,
-      db.events,
-      db.gallery,
-      db.stories,
-      db.boards,
-      db.posts,
-      db.relations,
-      db.nodePositions,
-    ],
-    async () => {
-      await Promise.all([
-        db.characters.clear(),
-        db.worldEntries.clear(),
-        db.events.clear(),
-        db.gallery.clear(),
-        db.stories.clear(),
-        db.boards.clear(),
-        db.posts.clear(),
-        db.relations.clear(),
-        db.nodePositions.clear(),
-      ])
-    }
-  )
+  await db.transaction('rw', ALL_TABLES(), async () => {
+    await Promise.all([
+      db.worlds.clear(),
+      db.characters.clear(),
+      db.worldEntries.clear(),
+      db.events.clear(),
+      db.gallery.clear(),
+      db.stories.clear(),
+      db.boards.clear(),
+      db.posts.clear(),
+      db.relations.clear(),
+      db.nodePositions.clear(),
+    ])
+  })
   await seedIfEmpty()
 }

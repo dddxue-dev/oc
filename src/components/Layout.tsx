@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Menu, Search, X } from 'lucide-react'
+import ColorSwatches from './ColorSwatches'
 import SearchPalette from './SearchPalette'
 import SideNav from './SideNav'
 import ThemeMenu from './ThemeMenu'
+import WorldSwitcher from './WorldSwitcher'
 
 const NAV = [
   { to: '/', label: '总览', end: true },
@@ -17,13 +19,13 @@ const NAV = [
 
 function Brand() {
   return (
-    <Link to="/" className="flex shrink-0 items-center gap-2.5">
+    <Link
+      to="/"
+      className="flex shrink-0 items-center"
+      title="OC 档案馆 · 回到总览"
+    >
       <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-accent text-[12.5px] font-semibold text-accent-fg">
         OC
-      </div>
-      <div className="hidden leading-tight sm:block">
-        <div className="text-[13px] font-semibold tracking-tight">档案馆</div>
-        <div className="text-[10px] text-subtle">本地优先 · 数据自持</div>
       </div>
     </Link>
   )
@@ -78,6 +80,7 @@ export default function Layout() {
       <header className="sticky top-0 z-30 border-b border-line bg-app/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-3 px-4 lg:px-6">
           <Brand />
+          <WorldSwitcher />
 
           <div className="mx-1 hidden h-5 w-px bg-line lg:block" />
 
@@ -94,8 +97,12 @@ export default function Layout() {
           >
             <Search size={13} />
             <span className="hidden sm:inline">搜索</span>
-            <span className="hidden text-[10.5px] md:inline">Ctrl K</span>
+            <span className="hidden text-[10.5px] xl:inline">Ctrl K</span>
           </button>
+
+          <div className="hidden items-center rounded-full border border-line bg-surface px-1.5 py-1 md:flex">
+            <ColorSwatches />
+          </div>
 
           <ThemeMenu />
 
@@ -116,8 +123,11 @@ export default function Layout() {
             onClick={() => setMobileOpen(false)}
           />
           <aside className="absolute inset-y-0 left-0 flex w-[272px] flex-col border-r border-line bg-surface">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
               <Brand />
+              <div className="min-w-0 flex-1">
+                <WorldSwitcher />
+              </div>
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => setMobileOpen(false)}
@@ -129,6 +139,10 @@ export default function Layout() {
             <div className="border-b border-line px-2 py-2">
               <MainNav onNavigate={() => setMobileOpen(false)} />
             </div>
+            <div className="border-b border-line px-3 py-3">
+              <div className="mb-2 px-0.5 text-[11.5px] font-medium text-muted">配色</div>
+              <ColorSwatches withLabel />
+            </div>
             <div className="flex-1 overflow-y-auto px-2 py-4">
               <SideNav />
             </div>
@@ -137,8 +151,8 @@ export default function Layout() {
       ) : null}
 
       <div className="mx-auto flex w-full max-w-[1320px] px-4 lg:px-6">
-        <aside className="hidden w-[208px] shrink-0 lg:block">
-          <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto py-6 pr-5">
+        <aside className="hidden w-[176px] shrink-0 lg:block">
+          <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto py-6 pr-4">
             <SideNav />
           </div>
         </aside>
@@ -149,7 +163,7 @@ export default function Layout() {
       </div>
 
       <footer className="mx-auto max-w-[1320px] px-4 pb-10 lg:px-6">
-        <div className="border-t border-line pt-5 text-[11.5px] text-subtle lg:pl-[208px]">
+        <div className="border-t border-line pt-5 text-[11.5px] text-subtle lg:pl-[176px]">
           OC Archive · 所有内容仅保存在本地浏览器（IndexedDB）。 建议定期在「设置」中导出 JSON
           备份。
         </div>

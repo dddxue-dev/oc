@@ -3,11 +3,13 @@ import { useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Images, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { GalleryItem } from '@/lib/types'
 import GalleryEditor from '@/components/GalleryEditor'
 import { Chips, Empty, Modal, PageHeader } from '@/components/ui'
 
 export default function Gallery() {
+  const worldId = useWorldId()
   const [params, setParams] = useSearchParams()
   const focus = params.get('focus')
   const cat = params.get('cat')
@@ -18,8 +20,15 @@ export default function Gallery() {
   const [editing, setEditing] = useState<GalleryItem | null>(null)
   const [viewing, setViewing] = useState<GalleryItem | null>(null)
 
-  const items = useLiveQuery(() => db.gallery.toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const items =
+    useLiveQuery(() => db.gallery.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const charMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters])
 
   useEffect(() => {

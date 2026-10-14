@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ImagePlus, Wand2 } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { artUrl } from '@/lib/placeholder'
 import { STORY_STATUS, type Story } from '@/lib/types'
 import { Avatar, Field, Modal } from './ui'
@@ -12,7 +13,7 @@ const EMPTY = {
   summary: '',
   content: '',
   status: STORY_STATUS[0] as string,
-  worldId: '',
+  entryId: '',
 }
 
 export default function StoryEditor({
@@ -28,8 +29,17 @@ export default function StoryEditor({
   const [tagText, setTagText] = useState('')
   const [charIds, setCharIds] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const worldEntries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const worldEntries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   /** 世界观词条按层级展开成下拉选项，前缀缩进体现父子关系 */
   const worldOptions = useMemo(() => {
@@ -66,7 +76,7 @@ export default function StoryEditor({
         summary: initial.summary ?? '',
         content: initial.content ?? '',
         status: initial.status ?? STORY_STATUS[0],
-        worldId: initial.worldId ?? '',
+        entryId: initial.entryId ?? '',
       })
       setTagText(initial.tags.join('、'))
       setCharIds(initial.characterIds)
@@ -100,7 +110,8 @@ export default function StoryEditor({
       summary: form.summary,
       content: form.content,
       status: form.status,
-      worldId: form.worldId || undefined,
+      worldId,
+      entryId: form.entryId || undefined,
       tags,
       characterIds: charIds,
       createdAt: initial?.createdAt ?? now(),
@@ -194,8 +205,8 @@ export default function StoryEditor({
         <Field label="世界观" hint="这条故事归属的世界观词条">
           <select
             className="select"
-            value={form.worldId}
-            onChange={(e) => set('worldId', e.target.value)}
+            value={form.entryId}
+            onChange={(e) => set('entryId', e.target.value)}
           >
             <option value="">（不关联）</option>
             {worldOptions.map((w) => (

@@ -4,10 +4,12 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { useWikiResolver } from '@/lib/wiki'
+import { useWorldId } from '@/lib/world'
 import WorldEntryEditor from '@/components/WorldEntryEditor'
 import { Chips, Empty, MarkdownView, Modal } from '@/components/ui'
 
 export default function WorldEntryDetail() {
+  const worldId = useWorldId()
   const { id = '' } = useParams()
   const nav = useNavigate()
   const resolve = useWikiResolver()
@@ -15,7 +17,11 @@ export default function WorldEntryDetail() {
   const [confirmDel, setConfirmDel] = useState(false)
 
   const entry = useLiveQuery(() => db.worldEntries.get(id), [id])
-  const all = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const all =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   const byId = useMemo(() => new Map(all.map((e) => [e.id, e])), [all])
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { BookOpen, Plus, Search, X } from 'lucide-react'
 import { db } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import type { Story } from '@/lib/types'
 import { plainText } from '@/lib/markdown'
 import { useParamState } from '@/lib/useParam'
@@ -10,15 +11,27 @@ import StoryEditor from '@/components/StoryEditor'
 import { Avatar, Chips, Empty, PageHeader } from '@/components/ui'
 
 export default function Stories() {
+  const worldId = useWorldId()
   const [status, setStatus] = useParamState('status')
   const [world, setWorld] = useParamState('world')
   const [q, setQ] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<Story | null>(null)
 
-  const stories = useLiveQuery(() => db.stories.toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
-  const worldEntries = useLiveQuery(() => db.worldEntries.toArray(), []) ?? []
+  const stories =
+    useLiveQuery(() => db.stories.where('worldId').equals(worldId).toArray(), [
+      worldId,
+    ]) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
+  const worldEntries =
+    useLiveQuery(
+      () => db.worldEntries.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
   const charMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters])
   const worldMap = useMemo(() => new Map(worldEntries.map((w) => [w.id, w])), [worldEntries])
 
@@ -29,7 +42,7 @@ export default function Stories() {
     return stories
       .filter((s) => {
         if (status && s.status !== status) return false
-        if (world && s.worldId !== world) return false
+        if (world && s.entryId !== world) return false
         if (!kw) return true
         return [s.title, s.summary, s.content, s.tags.join(' ')]
           .filter(Boolean)
@@ -151,9 +164,9 @@ export default function Stories() {
                       <div className="text-[14.5px] font-medium">{s.title}</div>
                       {s.status ? <span className="chip shrink-0">{s.status}</span> : null}
                     </div>
-                    {s.worldId ? (
+                    {s.entryId ? (
                       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-subtle">
-                        <span>{worldMap.get(s.worldId)?.title ?? '未知世界观'}</span>
+                        <span>{worldMap.get(s.entryId)?.title ?? '未知世界观'}</span>
                       </div>
                     ) : null}
                     <p className="mt-1.5 line-clamp-3 flex-1 text-[12.5px] leading-[1.75] text-muted">

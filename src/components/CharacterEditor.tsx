@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, RefreshCw } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { PALETTE, avatarUrl, pickColor } from '@/lib/placeholder'
 import type { Character } from '@/lib/types'
 import { Avatar, Field, Modal } from './ui'
 
-const EMPTY: Omit<Character, 'id' | 'createdAt' | 'updatedAt'> = {
+const EMPTY: Omit<Character, 'id' | 'worldId' | 'createdAt' | 'updatedAt'> = {
   name: '',
   alias: '',
   avatar: '',
@@ -35,6 +36,7 @@ export default function CharacterEditor({
 }) {
   const [form, setForm] = useState({ ...EMPTY })
   const [tagText, setTagText] = useState('')
+  const worldId = useWorldId()
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function CharacterEditor({
       .filter(Boolean)
     const payload: Character = {
       ...form,
+      worldId,
       name: form.name.trim(),
       tags,
       id: initial?.id ?? uid(),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { seedIfEmpty } from './lib/seed'
+import { WorldProvider } from './lib/world'
 import Overview from './pages/Overview'
 import Worldview from './pages/Worldview'
 import WorldEntryDetail from './pages/WorldEntryDetail'
@@ -44,23 +45,25 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<Overview />} />
-        <Route path="world" element={<Worldview />} />
-        <Route path="world/timeline" element={<Timeline />} />
-        <Route path="world/:id" element={<WorldEntryDetail />} />
-        <Route path="characters" element={<Characters />} />
-        <Route path="characters/graph" element={<RelationGraph />} />
-        <Route path="characters/:id" element={<CharacterDetail />} />
-        <Route path="gallery" element={<Gallery />} />
-        <Route path="stories" element={<Stories />} />
-        <Route path="stories/:id" element={<StoryDetail />} />
-        <Route path="forum" element={<Forum />} />
-        <Route path="forum/post/:id" element={<ForumThread />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+    <WorldProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Overview />} />
+          <Route path="world" element={<Worldview />} />
+          <Route path="world/timeline" element={<Timeline />} />
+          <Route path="world/:id" element={<WorldEntryDetail />} />
+          <Route path="characters" element={<Characters />} />
+          <Route path="characters/graph" element={<RelationGraph />} />
+          <Route path="characters/:id" element={<CharacterDetail />} />
+          <Route path="gallery" element={<Gallery />} />
+          <Route path="stories" element={<Stories />} />
+          <Route path="stories/:id" element={<StoryDetail />} />
+          <Route path="forum" element={<Forum />} />
+          <Route path="forum/post/:id" element={<ForumThread />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </WorldProvider>
   )
 }

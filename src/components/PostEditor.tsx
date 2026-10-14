@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { UserRound } from 'lucide-react'
 import { db, now, uid } from '@/lib/db'
+import { useWorldId } from '@/lib/world'
 import { avatarUrl } from '@/lib/placeholder'
 import type { ForumPost } from '@/lib/types'
 import { Avatar, Field, Modal } from './ui'
@@ -23,8 +24,17 @@ export default function PostEditor({
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
 
-  const boards = useLiveQuery(() => db.boards.orderBy('order').toArray(), []) ?? []
-  const characters = useLiveQuery(() => db.characters.toArray(), []) ?? []
+  const worldId = useWorldId()
+  const boards =
+    useLiveQuery(
+      () => db.boards.where('worldId').equals(worldId).sortBy('order'),
+      [worldId]
+    ) ?? []
+  const characters =
+    useLiveQuery(
+      () => db.characters.where('worldId').equals(worldId).toArray(),
+      [worldId]
+    ) ?? []
 
   useEffect(() => {
     if (!open) return
@@ -51,6 +61,7 @@ export default function PostEditor({
     if (!title.trim() || !boardId) return
     await db.posts.put({
       id: initial?.id ?? uid(),
+      worldId,
       boardId,
       title: title.trim(),
       content,
